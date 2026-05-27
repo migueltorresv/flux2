@@ -31,8 +31,50 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 models: dict = {}
 
 
+def download_models_from_gcs():
+    """Descarga los modelos desde GCS si no están presentes localmente."""
+    klein_path = os.environ.get("KLEIN_4B_MODEL_PATH", "/models/flux-2-klein-4b.safetensors")
+    ae_path = os.environ.get("AE_MODEL_PATH", "/models/ae.safetensors")
+    qwen_path = os.environ.get("QWEN3_4B_PATH", "/models/Qwen3-4B")
+    gcs_bucket = os.environ.get("GCS_BUCKET", "flux2models")
+
+    already_present = (
+        os.path.exists(klein_path)
+        and os.path.exists(ae_path)
+        and os.path.isdir(qwen_path)
+        and any(os.scandir(qwen_path))
+    )
+    if already_present:
+        print("Modelos ya presentes, omitiendo descarga.")
+        return
+
+    print(f"Descargando modelos desde gs://{gcs_bucket}/models/ ...")
+    from google.cloud import storage as gcs  # noqa: PLC0415
+
+    client = gcs.Client()
+    bucket = client.bucket(gcs_bucket)
+
+    os.makedirs(qwen_path, exist_ok=True)
+
+    def _dl(blob_name: str, dest: str):
+        if not os.path.exists(dest):
+            print(f"  {blob_name} -> {dest}")
+            bucket.blob(blob_name).download_to_filename(dest)
+
+    _dl("models/flux-2-klein-4b.safetensors", klein_path)
+    _dl("models/ae.safetensors", ae_path)
+
+    for blob in client.list_blobs(gcs_bucket, prefix="models/Qwen3-4B/"):
+        filename = blob.name[len("models/Qwen3-4B/"):]
+        if filename:
+            _dl(blob.name, os.path.join(qwen_path, filename))
+
+    print("Descarga completa.")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    download_models_from_gcs()
     print(f"Loading model: {MODEL_NAME} on {DEVICE}")
     models["text_encoder"] = load_text_encoder(MODEL_NAME, device=DEVICE)
     models["flow"] = load_flow_model(MODEL_NAME, device=DEVICE)

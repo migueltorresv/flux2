@@ -1,9 +1,4 @@
 steps:
-  # Descargar modelos desde GCS (Cloud Build SA tiene credenciales automáticas)
-  - name: 'gcr.io/cloud-builders/gsutil'
-    args: ['-m', 'rsync', '-r', 'gs://flux2models/models/', 'models/']
-
-  # Construir imagen Docker (los modelos ya están en el contexto de build)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - build
@@ -21,4 +16,4 @@ images:
 
 options:
   machineType: E2_HIGHCPU_8
-  diskSizeGb: 150
+  diskSizeGb: 50

@@ -4,20 +4,18 @@ WORKDIR /app
 
 # Install Python dependencies
 COPY pyproject.toml .
-RUN pip install --no-cache-dir -e . fastapi uvicorn[standard] \
+RUN pip install --no-cache-dir -e . fastapi uvicorn[standard] google-cloud-storage \
     --extra-index-url https://download.pytorch.org/whl/cu129
 
 # Copy source code
 COPY src/ src/
 COPY api.py .
 
-# Copy model weights (downloaded by Cloud Build step before docker build)
-COPY models/ /models/
-
-# Point to local model files
+# Rutas donde se descargarán los modelos al startup desde GCS
 ENV KLEIN_4B_MODEL_PATH=/models/flux-2-klein-4b.safetensors
 ENV AE_MODEL_PATH=/models/ae.safetensors
 ENV QWEN3_4B_PATH=/models/Qwen3-4B
+ENV GCS_BUCKET=flux2models
 ENV MODEL_NAME=flux.2-klein-4b
 ENV PYTHONPATH=src
 ENV HF_HUB_OFFLINE=1
