@@ -3,7 +3,7 @@ steps:
     args:
       - build
       - '--build-arg'
-      - 'GCS_BUCKET=$_GCS_BUCKET'
+      - 'GCS_BUCKET=flux2models'
       - '-t'
       - '$_AR_HOSTNAME/$PROJECT_ID/$_REPOSITORY/$_SERVICE_NAME:$COMMIT_SHA'
       - '.'
