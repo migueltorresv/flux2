@@ -21,7 +21,7 @@ COPY src/ src/
 COPY api.py .
 
 # Download model weights from GCS (Cloud Build service account needs read access)
-ARG GCS_BUCKET
+ARG GCS_BUCKET=flux2models
 RUN mkdir -p /models/Qwen3-4B && \
     gsutil cp gs://${GCS_BUCKET}/models/flux-2-klein-4b.safetensors /models/ && \
     gsutil cp gs://${GCS_BUCKET}/models/ae.safetensors /models/ && \
