@@ -1,0 +1,38 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - build
+      - '--build-arg'
+      - 'GCS_BUCKET=$_GCS_BUCKET'
+      - '-t'
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_REPOSITORY/$_SERVICE_NAME:$COMMIT_SHA'
+      - '.'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - push
+      - '$_AR_HOSTNAME/$PROJECT_ID/$_REPOSITORY/$_SERVICE_NAME:$COMMIT_SHA'
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - '$_SERVICE_NAME'
+      - '--image=$_AR_HOSTNAME/$PROJECT_ID/$_REPOSITORY/$_SERVICE_NAME:$COMMIT_SHA'
+      - '--region=$_DEPLOY_REGION'
+      - '--platform=managed'
+
+images:
+  - '$_AR_HOSTNAME/$PROJECT_ID/$_REPOSITORY/$_SERVICE_NAME:$COMMIT_SHA'
+
+substitutions:
+  _GCS_BUCKET: flux2models
+  _AR_HOSTNAME: us-central1-docker.pkg.dev
+  _REPOSITORY: flux2-repo
+  _SERVICE_NAME: flux2-api
+  _DEPLOY_REGION: us-central1
+
+options:
+  machineType: E2_HIGHCPU_8        # más CPU para build más rápido
+  diskSizeGb: '50'                 # espacio para los modelos durante build
