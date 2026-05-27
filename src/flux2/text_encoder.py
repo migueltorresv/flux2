@@ -433,4 +433,20 @@ def load_mistral_small_embedder(device: str | torch.device = "cuda") -> Mistral3
 
 
 def load_qwen3_embedder(variant: str, device: str | torch.device = "cuda"):
-    return Qwen3Embedder(model_spec=f"Qwen/Qwen3-{variant}-FP8", device=device)
+    import os
+
+    # Allow overriding with a local directory (useful for Docker / offline environments)
+    env_key = f"QWEN3_{variant.replace('-', '_').upper()}_PATH"
+    local_path = os.environ.get(env_key, "").strip()
+    if local_path and os.path.isdir(local_path):
+        return Qwen3Embedder(model_spec=local_path, device=device)
+
+    # FP8 requires compute capability >= 8.9 (e.g. RTX 4090, H100)
+    try:
+        dev_idx = device.index if isinstance(device, torch.device) and device.index is not None else 0
+        cc_major, cc_minor = torch.cuda.get_device_capability(dev_idx)
+        use_fp8 = (cc_major, cc_minor) >= (8, 9)
+    except Exception:
+        use_fp8 = False
+    suffix = "-FP8" if use_fp8 else ""
+    return Qwen3Embedder(model_spec=f"Qwen/Qwen3-{variant}{suffix}", device=device)
